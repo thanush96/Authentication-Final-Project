@@ -36,34 +36,36 @@ import com.squareup.picasso.Picasso;
 import javax.annotation.Nullable;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int GALLERY_INTENT_CODE = 1023;
-    TextView verifyMsg;
+    private static final int GALLERY_INTENT_CODE = 1023 ;
+    TextView fullName,email,phone,verifyMsg;
     FirebaseAuth fAuth;
     FirebaseFirestore fStore;
+    String userId;
     Button resendCode;
-    Button resetPassLocal;
+    Button resetPassLocal,changeProfileImage;
     FirebaseUser user;
-    StorageReference storageReference;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        phone = findViewById(R.id.profilePhone);
+        fullName = findViewById(R.id.profileName);
+        email    = findViewById(R.id.profileEmail);
         resetPassLocal = findViewById(R.id.resetPasswordLocal);
-
 
         fAuth = FirebaseAuth.getInstance();
         fStore = FirebaseFirestore.getInstance();
-        storageReference = FirebaseStorage.getInstance().getReference();
+
         resendCode = findViewById(R.id.resendCode);
         verifyMsg = findViewById(R.id.verifyMsg);
 
 
-        // userId = fAuth.getCurrentUser().getUid();
+        userId = fAuth.getCurrentUser().getUid();
         user = fAuth.getCurrentUser();
 
-        if (!user.isEmailVerified()) {
+        if(!user.isEmailVerified()){
             verifyMsg.setVisibility(View.VISIBLE);
             resendCode.setVisibility(View.VISIBLE);
 
@@ -86,7 +88,25 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        //Password Reset Localy
+
+
+
+        DocumentReference documentReference = fStore.collection("users").document(userId);
+        documentReference.addSnapshotListener(this, new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                if(documentSnapshot.exists()){
+                    phone.setText(documentSnapshot.getString("phone"));
+                    fullName.setText(documentSnapshot.getString("fName"));
+                    email.setText(documentSnapshot.getString("email"));
+
+                }else {
+                    Log.d("tag", "onEvent: Document do not exists");
+                }
+            }
+        });
+
+
         resetPassLocal.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -132,10 +152,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    //LOGOUT
+
+
     public void logout(View view) {
         FirebaseAuth.getInstance().signOut();//logout
-        startActivity(new Intent(getApplicationContext(), Login.class));
+        startActivity(new Intent(getApplicationContext(),Login.class));
         finish();
     }
 
